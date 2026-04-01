@@ -1,0 +1,18 @@
+[
+  {
+    "id": "MP_TENCENT_RESEARCH",
+    "name": "Tencent Research Institute",
+    "intro": "Tencent public account",
+    "cover": "https://example.com/tencent.png",
+    "syncTime": 1710000000,
+    "updateTime": 1710001200
+  },
+  {
+    "id": "MP_ALIBABA_CLOUD",
+    "name": "Alibaba Cloud",
+    "intro": "Alibaba Cloud public account",
+    "cover": "https://example.com/alibaba.png",
+    "syncTime": 1710000000,
+    "updateTime": 1710002200
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "version": "https://jsonfeed.org/version/1",
+  "title": "Tencent Research Institute",
+  "home_page_url": "http://127.0.0.1:4000/feeds/MP_TENCENT_RESEARCH.json",
+  "feed_url": "http://127.0.0.1:4000/feeds/MP_TENCENT_RESEARCH.json",
+  "items": [
+    {
+      "id": "article-001",
+      "url": "https://mp.weixin.qq.com/s/article-001",
+      "title": "AI Industry Outlook",
+      "date_published": "2026-03-30T10:00:00+00:00",
+      "image": "https://example.com/article-001.png",
+      "summary": "<p>Summary A</p>",
+      "content_html": "<p>Content A</p>"
+    },
+    {
+      "id": "article-002",
+      "url": "https://mp.weixin.qq.com/s/article-002",
+      "title": "Enterprise Agent Report",
+      "date_published": "2026-03-28T10:00:00+00:00",
+      "image": "https://example.com/article-002.png",
+      "summary": "<p>Summary B</p>",
+      "content_html": "<p>Content B</p>"
+    }
+  ]
+}
