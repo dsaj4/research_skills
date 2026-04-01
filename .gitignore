@@ -1,0 +1,19 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python cache
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+
+# Generated spreadsheet artifacts
+**/output/spreadsheet/*.csv
+**/output/spreadsheet/*.xlsx
+
+# Temporary render/cache files
+**/tmp/spreadsheets/*.html
+**/tmp/spreadsheets/*.pdf
+**/tmp/spreadsheets/*.png
+**/tmp/spreadsheets/*.jpg
+**/tmp/spreadsheets/*.jpeg

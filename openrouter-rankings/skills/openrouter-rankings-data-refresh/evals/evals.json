@@ -1,0 +1,17 @@
+{
+  "skill_name": "openrouter-rankings-data-refresh",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "刷新 OpenRouter rankings 的原始数据层，但不要改展示页样式。",
+      "expected_output": "Updates cache, CSVs, and workbook data-layer sheets only.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "重新抓一下 OpenRouter 排行，把 workbook 的 Raw 和 Data helper sheet 更新到最新。",
+      "expected_output": "Runs the data-refresh path and reports the updated workbook and CSV outputs.",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "skill_name": "openrouter-rankings-display-refresh",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "参考 example-charts.xlsx，把现有 workbook 的展示页重建成双列 dashboard，但不要重新抓数据。",
+      "expected_output": "Rebuilds the single display page from the existing workbook data layer.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "只刷新 OpenRouter workbook 的展示层，保留 Raw 和 Data sheet 不变。",
+      "expected_output": "Runs display-refresh and reports the updated workbook path.",
+      "files": []
+    }
+  ]
+}

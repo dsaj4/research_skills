@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenRouter Data Refresh"
+  short_description: "Refresh OpenRouter rankings raw data and workbook data sheets"
+  default_prompt: "Use $openrouter-rankings-data-refresh to refresh OpenRouter rankings raw data, CSVs, cache, and workbook data-layer sheets without redesigning the display page."

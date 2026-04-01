@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenRouter Display Refresh"
+  short_description: "Rebuild the OpenRouter dashboard display page from workbook data"
+  default_prompt: "Use $openrouter-rankings-display-refresh to rebuild the OpenRouter workbook display page, charts, and summary layout from the existing data layer without fetching new network data."
