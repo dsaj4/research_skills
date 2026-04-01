@@ -91,6 +91,60 @@ def sample_timeseries_payload() -> dict[str, object]:
     }
 
 
+def sample_older_timeseries_payload() -> dict[str, object]:
+    return {
+        "forecast_key": "forecast-legacy",
+        "rows": [
+            {
+                "week_start": "2025-03-31",
+                "provider-a/model-a": 60,
+                "provider-b/model-b": 50,
+                "Others": 140,
+            },
+            {
+                "week_start": "2025-04-07",
+                "provider-a/model-a": 70,
+                "provider-b/model-b": 40,
+                "provider-d/model-d": 20,
+                "Others": 130,
+            },
+        ],
+    }
+
+
+def sample_leaderboard_history_rows() -> list[dict[str, object]]:
+    return [
+        {
+            **sample_leaderboard_rows()[0],
+            "source_url": rankings.SOURCE_URL,
+            "ranking_period": rankings.RANKING_PERIOD,
+            "snapshot_captured_at": "2026-03-24",
+            "generated_at": "2026-03-24 09:00:00 CST",
+        },
+        {
+            **sample_leaderboard_rows()[1],
+            "source_url": rankings.SOURCE_URL,
+            "ranking_period": rankings.RANKING_PERIOD,
+            "snapshot_captured_at": "2026-03-24",
+            "generated_at": "2026-03-24 09:00:00 CST",
+        },
+        {
+            **sample_leaderboard_rows()[2],
+            "source_url": rankings.SOURCE_URL,
+            "ranking_period": rankings.RANKING_PERIOD,
+            "snapshot_captured_at": "2026-03-31",
+            "generated_at": "2026-03-31 09:00:00 CST",
+        },
+        {
+            **sample_leaderboard_rows()[3],
+            "source_url": rankings.SOURCE_URL,
+            "ranking_period": rankings.RANKING_PERIOD,
+            "snapshot_captured_at": "2026-03-31",
+            "generated_at": "2026-03-31 09:00:00 CST",
+        },
+    ]
+
+
 class TopModelsExtractionTests(unittest.TestCase):
     def test_extract_top_models_chart_payload_from_html(self) -> None:
         html = (FIXTURES_DIR / "top_models_fragment.html").read_text(encoding="utf-8")
@@ -116,6 +170,25 @@ class TopModelsExtractionTests(unittest.TestCase):
 
 
 class DatasetTests(unittest.TestCase):
+    def test_merge_timeseries_history_keeps_older_weeks_and_replaces_overlap(self) -> None:
+        merged = rankings.merge_timeseries_history(sample_older_timeseries_payload(), sample_timeseries_payload())
+
+        self.assertEqual(merged["forecast_key"], "forecast-1w")
+        self.assertEqual([row["week_start"] for row in merged["rows"]], ["2025-03-31", "2025-04-07", "2025-04-14"])
+        self.assertEqual(merged["rows"][1]["provider-a/model-a"], 80)
+        self.assertNotIn("provider-d/model-d", merged["rows"][0])
+        self.assertEqual(merged["rows"][1]["provider-d/model-d"], 30)
+
+    def test_load_leaderboard_rows_from_workbook_can_filter_to_latest_snapshot(self) -> None:
+        wb = rankings.create_workbook_skeleton()
+        rankings.write_raw_leaderboard_sheet(wb[rankings.RAW_LEADERBOARD_SHEET], sample_leaderboard_history_rows())
+
+        latest_rows = rankings.load_leaderboard_rows_from_workbook(wb, latest_snapshot_only=True)
+
+        self.assertEqual(len(latest_rows), 2)
+        self.assertEqual({row["snapshot_captured_at"] for row in latest_rows}, {"2026-03-31"})
+        self.assertEqual([row["rank"] for row in latest_rows], [3, 4])
+
     def test_kimi_emphasis_series_color_map_highlights_kimi_and_mutes_others(self) -> None:
         series_keys = [
             "provider-a/model-a",
@@ -172,12 +245,106 @@ class WorkbookStructureTests(unittest.TestCase):
             self.assertEqual(len(wb[rankings.DISPLAY_SHEET_TITLE]._charts), 4)
             top_chart = wb[rankings.DISPLAY_SHEET_TITLE]._charts[0]
             self.assertEqual(top_chart.__class__.__name__, "BarChart")
+            self.assertIsNotNone(top_chart.legend)
+            self.assertEqual(top_chart.legend.position, "r")
+            self.assertEqual(top_chart.gapWidth, 0)
+            self.assertEqual(top_chart.overlap, 100.0)
+            self.assertEqual(top_chart.ser[0].cat.numRef.f, "'Data_Trend'!$A$2:$A$3")
+            self.assertEqual(top_chart.ser[0].val.numRef.f, "'Data_Trend'!$B$2:$B$3")
             self.assertEqual(wb[rankings.DISPLAY_SHEET_TITLE].print_area, "'展示页'!$A$1:$Q$55")
             raw_headers = [cell.value for cell in wb["Raw_TimeSeries"][1]]
             self.assertIn("forecast-1w", raw_headers)
 
 
 class ModeTests(unittest.TestCase):
+    def test_data_refresh_appends_incremental_history(self) -> None:
+        fixture_html = (FIXTURES_DIR / "top_models_fragment.html").read_text(encoding="utf-8")
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            base = Path(tmp_dir)
+            workbook_path = base / "openrouter_top_models.xlsx"
+            leaderboard_csv = base / "openrouter_top_models.csv"
+            timeseries_csv = base / "openrouter_top_models_timeseries.csv"
+            cache_path = base / "rankings_page.html"
+            cache_path.write_text(fixture_html, encoding="utf-8")
+
+            rankings.build_workbook(
+                sample_older_timeseries_payload(),
+                sample_leaderboard_history_rows(),
+                workbook_path,
+                generated_at="2026-03-31 09:00:00 CST",
+            )
+
+            with mock.patch.object(rankings, "fetch_rankings_html", side_effect=TimeoutError("timeout")):
+                with mock.patch.object(rankings, "current_timestamp", return_value="2026-04-07 09:00:00 CST"):
+                    with mock.patch.object(rankings, "LEADERBOARD_SNAPSHOT", sample_leaderboard_rows()):
+                        rankings.main(
+                            [
+                                "--mode",
+                                "data-refresh",
+                                "--workbook-path",
+                                str(workbook_path),
+                                "--leaderboard-csv-path",
+                                str(leaderboard_csv),
+                                "--timeseries-csv-path",
+                                str(timeseries_csv),
+                                "--cache-path",
+                                str(cache_path),
+                            ]
+                        )
+
+            refreshed = load_workbook(workbook_path)
+            merged_timeseries = rankings.load_timeseries_payload_from_workbook(refreshed)
+            self.assertEqual([row["week_start"] for row in merged_timeseries["rows"]], ["2025-03-31", "2025-04-07", "2025-04-14"])
+
+            leaderboard_history = rankings.load_leaderboard_rows_from_workbook(refreshed, latest_snapshot_only=False)
+            self.assertEqual({row["snapshot_captured_at"] for row in leaderboard_history}, {"2026-03-24", "2026-03-31", "2026-04-07"})
+            latest_snapshot_rows = rankings.load_leaderboard_rows_from_workbook(refreshed, latest_snapshot_only=True)
+            self.assertEqual(len(latest_snapshot_rows), 4)
+            self.assertEqual({row["snapshot_captured_at"] for row in latest_snapshot_rows}, {"2026-04-07"})
+
+    def test_full_mode_appends_incremental_history(self) -> None:
+        fixture_html = (FIXTURES_DIR / "top_models_fragment.html").read_text(encoding="utf-8")
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            base = Path(tmp_dir)
+            workbook_path = base / "openrouter_top_models.xlsx"
+            leaderboard_csv = base / "openrouter_top_models.csv"
+            timeseries_csv = base / "openrouter_top_models_timeseries.csv"
+            cache_path = base / "rankings_page.html"
+            cache_path.write_text(fixture_html, encoding="utf-8")
+
+            rankings.build_workbook(
+                sample_older_timeseries_payload(),
+                sample_leaderboard_history_rows(),
+                workbook_path,
+                generated_at="2026-03-31 09:00:00 CST",
+            )
+
+            with mock.patch.object(rankings, "fetch_rankings_html", side_effect=TimeoutError("timeout")):
+                with mock.patch.object(rankings, "current_timestamp", return_value="2026-04-07 09:00:00 CST"):
+                    with mock.patch.object(rankings, "LEADERBOARD_SNAPSHOT", sample_leaderboard_rows()):
+                        rankings.main(
+                            [
+                                "--mode",
+                                "full",
+                                "--workbook-path",
+                                str(workbook_path),
+                                "--leaderboard-csv-path",
+                                str(leaderboard_csv),
+                                "--timeseries-csv-path",
+                                str(timeseries_csv),
+                                "--cache-path",
+                                str(cache_path),
+                            ]
+                        )
+
+            refreshed = load_workbook(workbook_path)
+            merged_timeseries = rankings.load_timeseries_payload_from_workbook(refreshed)
+            self.assertEqual([row["week_start"] for row in merged_timeseries["rows"]], ["2025-03-31", "2025-04-07", "2025-04-14"])
+            latest_snapshot_rows = rankings.load_leaderboard_rows_from_workbook(refreshed, latest_snapshot_only=True)
+            self.assertEqual({row["snapshot_captured_at"] for row in latest_snapshot_rows}, {"2026-04-07"})
+
     def test_data_refresh_preserves_existing_display_page(self) -> None:
         fixture_html = (FIXTURES_DIR / "top_models_fragment.html").read_text(encoding="utf-8")
 

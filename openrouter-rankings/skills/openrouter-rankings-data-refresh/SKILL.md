@@ -13,6 +13,7 @@ Use this skill when the task is about data refresh, not dashboard redesign.
 - Refresh `openrouter_top_models.csv`
 - Refresh `openrouter_top_models_timeseries.csv`
 - Refresh workbook data-layer sheets: `Meta`, `Raw_TimeSeries`, `Raw_Leaderboard`, `Data_*`
+- Merge new data into existing weekly history instead of overwriting prior raw runs
 - Preserve the current display page layout if it already exists
 
 ## When to use

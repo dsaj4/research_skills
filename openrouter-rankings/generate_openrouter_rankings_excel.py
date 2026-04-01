@@ -181,6 +181,13 @@ def current_timestamp() -> str:
     return datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M:%S %Z")
 
 
+def snapshot_date_from_generated_at(generated_at: str) -> str:
+    match = re.match(r"(\d{4}-\d{2}-\d{2})", generated_at)
+    if match:
+        return match.group(1)
+    return LEADERBOARD_SNAPSHOT_CAPTURED_AT
+
+
 def tokens_to_billions(display_value: str) -> float:
     value = display_value.replace(" tokens", "").strip().upper()
     if value.endswith("T"):
@@ -298,6 +305,26 @@ def normalize_leaderboard_rows(rows: list[dict[str, object]]) -> list[dict[str, 
     return normalized
 
 
+def enrich_leaderboard_rows(
+    rows: list[dict[str, object]],
+    generated_at: str,
+    snapshot_captured_at: str | None = None,
+) -> list[dict[str, object]]:
+    snapshot_captured_at = snapshot_captured_at or snapshot_date_from_generated_at(generated_at)
+    enriched: list[dict[str, object]] = []
+    for row in rows:
+        enriched.append(
+            {
+                **row,
+                "source_url": row.get("source_url", SOURCE_URL),
+                "ranking_period": row.get("ranking_period", RANKING_PERIOD),
+                "snapshot_captured_at": row.get("snapshot_captured_at", snapshot_captured_at),
+                "generated_at": row.get("generated_at", generated_at),
+            }
+        )
+    return enriched
+
+
 def ordered_timeseries_keys(timeseries_payload: dict[str, object]) -> list[str]:
     rows = timeseries_payload["rows"]
     seen = set()
@@ -317,6 +344,60 @@ def ordered_timeseries_keys(timeseries_payload: dict[str, object]) -> list[str]:
                 seen.add(key)
 
     return ordered
+
+
+def merge_timeseries_history(existing_payload: dict[str, object], new_payload: dict[str, object]) -> dict[str, object]:
+    merged_by_week = {
+        str(row["week_start"]): dict(row)
+        for row in existing_payload.get("rows", [])
+        if row.get("week_start")
+    }
+    for row in new_payload.get("rows", []):
+        if row.get("week_start"):
+            merged_by_week[str(row["week_start"])] = dict(row)
+
+    merged_rows = [merged_by_week[week] for week in sorted(merged_by_week)]
+    return {
+        "forecast_key": new_payload.get("forecast_key") or existing_payload.get("forecast_key", ""),
+        "forecast_from_timestamp": new_payload.get("forecast_from_timestamp") or existing_payload.get("forecast_from_timestamp"),
+        "rows": merged_rows,
+    }
+
+
+def leaderboard_history_key(row: dict[str, object]) -> tuple[str, str, str, str]:
+    return (
+        str(row.get("snapshot_captured_at", "")),
+        str(row.get("ranking_period", RANKING_PERIOD)),
+        str(row.get("rank", "")),
+        str(row.get("model_url", row.get("model", ""))),
+    )
+
+
+def merge_leaderboard_history(existing_rows: list[dict[str, object]], new_rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    merged = {leaderboard_history_key(row): dict(row) for row in existing_rows}
+    for row in new_rows:
+        merged[leaderboard_history_key(row)] = dict(row)
+    return sorted(
+        merged.values(),
+        key=lambda row: (
+            str(row.get("snapshot_captured_at", "")),
+            int(row.get("rank", 0) or 0),
+            str(row.get("model", "")),
+        ),
+    )
+
+
+def latest_leaderboard_snapshot_date(rows: list[dict[str, object]]) -> str:
+    snapshot_dates = [str(row.get("snapshot_captured_at", "")) for row in rows if row.get("snapshot_captured_at")]
+    if snapshot_dates:
+        return max(snapshot_dates)
+    return LEADERBOARD_SNAPSHOT_CAPTURED_AT
+
+
+def latest_leaderboard_snapshot_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    latest_snapshot = latest_leaderboard_snapshot_date(rows)
+    latest_rows = [dict(row) for row in rows if str(row.get("snapshot_captured_at", "")) == latest_snapshot]
+    return sorted(latest_rows, key=lambda row: int(row.get("rank", 0) or 0))
 
 
 def write_leaderboard_csv(rows: list[dict[str, object]], path: Path, generated_at: str) -> None:
@@ -351,10 +432,10 @@ def write_leaderboard_csv(rows: list[dict[str, object]], path: Path, generated_a
                     "wow_change_direction": row["wow_change_direction"],
                     "model_url": row["model_url"],
                     "provider_url": row["provider_url"],
-                    "source_url": SOURCE_URL,
-                    "ranking_period": RANKING_PERIOD,
-                    "snapshot_captured_at": LEADERBOARD_SNAPSHOT_CAPTURED_AT,
-                    "generated_at": generated_at,
+                    "source_url": row.get("source_url", SOURCE_URL),
+                    "ranking_period": row.get("ranking_period", RANKING_PERIOD),
+                    "snapshot_captured_at": row.get("snapshot_captured_at", snapshot_date_from_generated_at(generated_at)),
+                    "generated_at": row.get("generated_at", generated_at),
                 }
             )
 
@@ -488,6 +569,22 @@ def display_label_for_series_key(series_key: str, leaderboard_rows: list[dict[st
     return label_map.get(normalize_series_lookup_key(series_key), fallback_series_label(series_key))
 
 
+def compact_chart_label(label: str) -> str:
+    compact = label.replace(" (free)", " free")
+    compact = compact.replace(" Plus ", " ")
+    compact = compact.replace(" Preview Free", " Preview")
+    compact = compact.replace(" Preview free", " Preview")
+    compact = compact.replace(" K2.5", " K2.5")
+    if " Preview" in compact and "\n" not in compact:
+        compact = compact.replace(" Preview", "\nPreview", 1)
+    elif compact.endswith(" free"):
+        compact = compact[:-5] + "\nfree"
+    elif len(compact) > 18 and " " in compact and "\n" not in compact:
+        head, tail = compact.rsplit(" ", 1)
+        compact = f"{head}\n{tail}"
+    return compact
+
+
 def select_display_trend_series_keys(timeseries_payload: dict[str, object], max_models: int = DISPLAY_TREND_MAX_MODELS) -> list[str]:
     rows = timeseries_payload["rows"]
     if not rows:
@@ -511,7 +608,7 @@ def select_display_trend_series_keys(timeseries_payload: dict[str, object], max_
 def prepare_display_datasets(timeseries_payload: dict[str, object], leaderboard_rows: list[dict[str, object]]) -> dict[str, object]:
     trend_series_keys = select_display_trend_series_keys(timeseries_payload)
     trend_color_map = kimi_emphasis_series_color_map(trend_series_keys)
-    trend_headers = ["week_start", *[display_label_for_series_key(key, leaderboard_rows) for key in trend_series_keys]]
+    trend_headers = ["week_start", *[compact_chart_label(display_label_for_series_key(key, leaderboard_rows)) for key in trend_series_keys]]
     trend_rows = [
         [row["week_start"], *[row.get(key, 0) or 0 for key in trend_series_keys]]
         for row in timeseries_payload["rows"]
@@ -568,6 +665,7 @@ def prepare_display_datasets(timeseries_payload: dict[str, object], leaderboard_
         "wow_rows": wow_rows,
         "wow_sheet_rows": wow_sheet_rows,
         "latest_week": latest_row.get("week_start", ""),
+        "latest_snapshot_captured_at": latest_leaderboard_snapshot_date(leaderboard_rows),
     }
 
 
@@ -629,6 +727,7 @@ def write_meta_sheet(
     ws,
     generated_at: str,
     timeseries_payload: dict[str, object],
+    leaderboard_rows: list[dict[str, object]],
     data_refreshed_at: str,
     display_refreshed_at: str,
 ) -> None:
@@ -649,7 +748,9 @@ def write_meta_sheet(
         ("display_refreshed_at", display_refreshed_at),
         ("top_chart_extraction_method", "Directly parsed from embedded rankings HTML data block."),
         ("leaderboard_extraction_method", "Direct DOM snapshot extracted after expanding Show more on 2026-03-31."),
-        ("leaderboard_snapshot_captured_at", LEADERBOARD_SNAPSHOT_CAPTURED_AT),
+        ("leaderboard_snapshot_captured_at", latest_leaderboard_snapshot_date(leaderboard_rows)),
+        ("timeseries_week_count", len(timeseries_payload.get("rows", []))),
+        ("leaderboard_snapshot_count", len({str(row.get("snapshot_captured_at", "")) for row in leaderboard_rows if row.get("snapshot_captured_at")})),
         ("forecast_key", timeseries_payload.get("forecast_key", "")),
         ("palette_source", KIMI_PALETTE_SOURCE_NOTE),
         ("notes", "Single workbook with raw data layer plus a display dashboard. No values are estimated."),
@@ -704,6 +805,9 @@ def write_raw_leaderboard_sheet(ws, leaderboard_rows: list[dict[str, object]]) -
         "model_url",
         "provider_url",
         "source_url",
+        "ranking_period",
+        "snapshot_captured_at",
+        "generated_at",
     ]
     rows = [
         [
@@ -716,12 +820,15 @@ def write_raw_leaderboard_sheet(ws, leaderboard_rows: list[dict[str, object]]) -
             row["wow_change_direction"],
             row["model_url"],
             row["provider_url"],
-            SOURCE_URL,
+            row.get("source_url", SOURCE_URL),
+            row.get("ranking_period", RANKING_PERIOD),
+            row.get("snapshot_captured_at", ""),
+            row.get("generated_at", ""),
         ]
         for row in leaderboard_rows
     ]
     write_table_sheet(ws, headers, rows, number_formats={5: '0.00 "B"', 6: '0;[Red]-0'})
-    widths = {"A": 8, "B": 28, "C": 16, "D": 18, "E": 18, "F": 18, "G": 16, "H": 42, "I": 28, "J": 28}
+    widths = {"A": 8, "B": 28, "C": 16, "D": 18, "E": 18, "F": 18, "G": 16, "H": 42, "I": 28, "J": 28, "K": 16, "L": 20, "M": 24}
     for col, width in widths.items():
         ws.column_dimensions[col].width = width
 
@@ -800,7 +907,7 @@ def build_display_sheet(ws, display_data: dict[str, object], generated_at: str) 
 
     latest_week = display_data["latest_week"]
     ws["B19"] = f"{DISPLAY_LATEST_WEEK_LABEL}{latest_week}"
-    ws["M19"] = f"{DISPLAY_SNAPSHOT_DATE_LABEL}{LEADERBOARD_SNAPSHOT_CAPTURED_AT}"
+    ws["M19"] = f"{DISPLAY_SNAPSHOT_DATE_LABEL}{display_data['latest_snapshot_captured_at']}"
     ws["B45"] = DISPLAY_KIMI_METRICS_TITLE
     ws["M45"] = DISPLAY_WOW_SUMMARY_TITLE
     for cell_ref in ("B19", "M19", "B45", "M45"):
@@ -834,21 +941,25 @@ def build_display_sheet(ws, display_data: dict[str, object], generated_at: str) 
         ws.cell(row=row_idx, column=15, value=f"{row['wow_change_percent']}%")
     style_display_summary_range(ws, 47, 54, 13, 15)
 
+    trend_data_max_row = ws.parent[DATA_TREND_SHEET].max_row
+
     trend_chart = BarChart()
     trend_chart.type = "col"
     trend_chart.grouping = "stacked"
     trend_chart.style = 13
     trend_chart.y_axis.title = "Tokens"
-    trend_chart.legend = None
+    trend_chart.legend.position = "r"
+    trend_chart.legend.overlay = False
     trend_chart.width = 13.6
     trend_chart.height = 6.0
-    trend_chart.gapWidth = 25
+    trend_chart.gapWidth = 0
+    trend_chart.overlap = 100
     trend_chart.add_data(
-        Reference(ws.parent[DATA_TREND_SHEET], min_col=2, max_col=len(display_data["trend_headers"]), min_row=1, max_row=max(ws.parent[DATA_TREND_SHEET].max_row, MAX_TREND_ROWS)),
+        Reference(ws.parent[DATA_TREND_SHEET], min_col=2, max_col=len(display_data["trend_headers"]), min_row=1, max_row=trend_data_max_row),
         titles_from_data=True,
     )
     trend_chart.set_categories(
-        Reference(ws.parent[DATA_TREND_SHEET], min_col=1, min_row=2, max_row=max(ws.parent[DATA_TREND_SHEET].max_row, MAX_TREND_ROWS))
+        Reference(ws.parent[DATA_TREND_SHEET], min_col=1, min_row=2, max_row=trend_data_max_row)
     )
     apply_series_colors(trend_chart, display_data["trend_series_keys"], display_data["trend_color_map"])
     ws.add_chart(trend_chart, "B6")
@@ -935,6 +1046,8 @@ def configure_display_page_setup(ws) -> None:
 def load_timeseries_payload_from_workbook(wb: Workbook) -> dict[str, object]:
     ws = wb[RAW_TIMESERIES_SHEET]
     headers = [cell.value for cell in ws[1]]
+    if not any(headers):
+        return {"forecast_key": "", "rows": []}
     rows: list[dict[str, object]] = []
     for row in ws.iter_rows(min_row=2, values_only=True):
         if not row[0]:
@@ -956,9 +1069,11 @@ def load_timeseries_payload_from_workbook(wb: Workbook) -> dict[str, object]:
     return {"forecast_key": forecast_key, "rows": rows}
 
 
-def load_leaderboard_rows_from_workbook(wb: Workbook) -> list[dict[str, object]]:
+def load_leaderboard_rows_from_workbook(wb: Workbook, latest_snapshot_only: bool = False) -> list[dict[str, object]]:
     ws = wb[RAW_LEADERBOARD_SHEET]
     headers = [cell.value for cell in ws[1]]
+    if not any(headers):
+        return []
     rows: list[dict[str, object]] = []
     for row in ws.iter_rows(min_row=2, values_only=True):
         if not row[0]:
@@ -969,8 +1084,16 @@ def load_leaderboard_rows_from_workbook(wb: Workbook) -> list[dict[str, object]]
             if idx < len(headers) and headers[idx] is not None
         }
         row_dict["wow_change_ratio"] = float(row_dict["wow_change_percent"]) / 100
+        if not row_dict.get("source_url"):
+            row_dict["source_url"] = SOURCE_URL
+        if not row_dict.get("ranking_period"):
+            row_dict["ranking_period"] = RANKING_PERIOD
+        if not row_dict.get("snapshot_captured_at"):
+            row_dict["snapshot_captured_at"] = read_meta_values(wb).get("leaderboard_snapshot_captured_at", LEADERBOARD_SNAPSHOT_CAPTURED_AT)
         rows.append(row_dict)
-    return rows
+    if latest_snapshot_only:
+        return latest_leaderboard_snapshot_rows(rows)
+    return merge_leaderboard_history([], rows)
 
 
 def remove_deprecated_variant_workbook(workbook_path: Path) -> None:
@@ -985,25 +1108,33 @@ def write_data_layers(
     leaderboard_rows: list[dict[str, object]],
     generated_at: str,
     display_refreshed_at: str,
-) -> None:
+) -> tuple[dict[str, object], list[dict[str, object]]]:
     ensure_workbook_skeleton(wb)
-    display_data = prepare_display_datasets(timeseries_payload, leaderboard_rows)
+    existing_timeseries_payload = load_timeseries_payload_from_workbook(wb)
+    existing_leaderboard_rows = load_leaderboard_rows_from_workbook(wb, latest_snapshot_only=False)
+    merged_timeseries_payload = merge_timeseries_history(existing_timeseries_payload, timeseries_payload)
+    merged_leaderboard_rows = merge_leaderboard_history(existing_leaderboard_rows, leaderboard_rows)
+    latest_leaderboard_rows = latest_leaderboard_snapshot_rows(merged_leaderboard_rows)
+    display_data = prepare_display_datasets(merged_timeseries_payload, latest_leaderboard_rows)
     write_meta_sheet(
         wb[META_SHEET],
         generated_at=generated_at,
-        timeseries_payload=timeseries_payload,
+        timeseries_payload=merged_timeseries_payload,
+        leaderboard_rows=merged_leaderboard_rows,
         data_refreshed_at=generated_at,
         display_refreshed_at=display_refreshed_at,
     )
-    write_raw_time_sheet(wb[RAW_TIMESERIES_SHEET], timeseries_payload)
-    write_raw_leaderboard_sheet(wb[RAW_LEADERBOARD_SHEET], leaderboard_rows)
+    write_raw_time_sheet(wb[RAW_TIMESERIES_SHEET], merged_timeseries_payload)
+    write_raw_leaderboard_sheet(wb[RAW_LEADERBOARD_SHEET], merged_leaderboard_rows)
     write_display_helper_sheets(wb, display_data)
+    return merged_timeseries_payload, merged_leaderboard_rows
 
 
 def refresh_display_layer(wb: Workbook, generated_at: str) -> None:
     ensure_workbook_skeleton(wb)
     timeseries_payload = load_timeseries_payload_from_workbook(wb)
-    leaderboard_rows = load_leaderboard_rows_from_workbook(wb)
+    leaderboard_history_rows = load_leaderboard_rows_from_workbook(wb, latest_snapshot_only=False)
+    leaderboard_rows = latest_leaderboard_snapshot_rows(leaderboard_history_rows)
     display_data = prepare_display_datasets(timeseries_payload, leaderboard_rows)
     meta_values = read_meta_values(wb)
     data_refreshed_at = meta_values.get("data_refreshed_at", generated_at)
@@ -1011,6 +1142,7 @@ def refresh_display_layer(wb: Workbook, generated_at: str) -> None:
         wb[META_SHEET],
         generated_at=generated_at,
         timeseries_payload=timeseries_payload,
+        leaderboard_rows=leaderboard_history_rows,
         data_refreshed_at=data_refreshed_at,
         display_refreshed_at=generated_at,
     )
@@ -1026,7 +1158,9 @@ def build_workbook(
 ) -> None:
     generated_at = generated_at or current_timestamp()
     wb = create_workbook_skeleton()
-    write_data_layers(wb, timeseries_payload, leaderboard_rows, generated_at, generated_at)
+    merged_timeseries_payload, merged_leaderboard_rows = write_data_layers(wb, timeseries_payload, leaderboard_rows, generated_at, generated_at)
+    write_timeseries_csv(merged_timeseries_payload, workbook_path.parent / "openrouter_top_models_timeseries.csv")
+    write_leaderboard_csv(merged_leaderboard_rows, workbook_path.parent / "openrouter_top_models.csv", generated_at)
     refresh_display_layer(wb, generated_at)
     workbook_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(workbook_path)
@@ -1041,19 +1175,19 @@ def run_data_refresh(
     generated_at = current_timestamp()
     html = load_rankings_html(cache_path)
     timeseries_payload = extract_top_models_chart_payload_from_html(html)
-    leaderboard_rows = normalize_leaderboard_rows(LEADERBOARD_SNAPSHOT)
-    write_leaderboard_csv(leaderboard_rows, leaderboard_csv_path, generated_at)
-    write_timeseries_csv(timeseries_payload, timeseries_csv_path)
+    leaderboard_rows = enrich_leaderboard_rows(normalize_leaderboard_rows(LEADERBOARD_SNAPSHOT), generated_at)
 
     if workbook_path.exists():
         wb = load_workbook(workbook_path)
         display_refreshed_at = read_meta_values(wb).get("display_refreshed_at", "")
-        write_data_layers(wb, timeseries_payload, leaderboard_rows, generated_at, display_refreshed_at)
+        merged_timeseries_payload, merged_leaderboard_rows = write_data_layers(wb, timeseries_payload, leaderboard_rows, generated_at, display_refreshed_at)
     else:
         wb = create_workbook_skeleton()
-        write_data_layers(wb, timeseries_payload, leaderboard_rows, generated_at, "")
+        merged_timeseries_payload, merged_leaderboard_rows = write_data_layers(wb, timeseries_payload, leaderboard_rows, generated_at, "")
         write_display_placeholder(wb[DISPLAY_SHEET_TITLE], generated_at)
 
+    write_leaderboard_csv(merged_leaderboard_rows, leaderboard_csv_path, generated_at)
+    write_timeseries_csv(merged_timeseries_payload, timeseries_csv_path)
     workbook_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(workbook_path)
     remove_deprecated_variant_workbook(workbook_path)
@@ -1078,10 +1212,29 @@ def run_full(
     generated_at = current_timestamp()
     html = load_rankings_html(cache_path)
     timeseries_payload = extract_top_models_chart_payload_from_html(html)
-    leaderboard_rows = normalize_leaderboard_rows(LEADERBOARD_SNAPSHOT)
-    write_leaderboard_csv(leaderboard_rows, leaderboard_csv_path, generated_at)
-    write_timeseries_csv(timeseries_payload, timeseries_csv_path)
-    build_workbook(timeseries_payload, leaderboard_rows, workbook_path, generated_at=generated_at)
+    leaderboard_rows = enrich_leaderboard_rows(normalize_leaderboard_rows(LEADERBOARD_SNAPSHOT), generated_at)
+
+    if workbook_path.exists():
+        wb = load_workbook(workbook_path)
+        display_refreshed_at = read_meta_values(wb).get("display_refreshed_at", "")
+        merged_timeseries_payload, merged_leaderboard_rows = write_data_layers(
+            wb,
+            timeseries_payload,
+            leaderboard_rows,
+            generated_at,
+            display_refreshed_at,
+        )
+        refresh_display_layer(wb, generated_at)
+        workbook_path.parent.mkdir(parents=True, exist_ok=True)
+        wb.save(workbook_path)
+    else:
+        build_workbook(timeseries_payload, leaderboard_rows, workbook_path, generated_at=generated_at)
+        wb = load_workbook(workbook_path)
+        merged_timeseries_payload = load_timeseries_payload_from_workbook(wb)
+        merged_leaderboard_rows = load_leaderboard_rows_from_workbook(wb, latest_snapshot_only=False)
+
+    write_leaderboard_csv(merged_leaderboard_rows, leaderboard_csv_path, generated_at)
+    write_timeseries_csv(merged_timeseries_payload, timeseries_csv_path)
     remove_deprecated_variant_workbook(workbook_path)
 
 
