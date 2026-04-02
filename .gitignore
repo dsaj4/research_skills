@@ -10,6 +10,7 @@ Thumbs.db
 # Generated spreadsheet artifacts
 **/output/spreadsheet/*.csv
 **/output/spreadsheet/*.xlsx
+**/output/data/*.sqlite
 
 # Temporary render/cache files
 **/tmp/spreadsheets/*.html
@@ -17,3 +18,4 @@ Thumbs.db
 **/tmp/spreadsheets/*.png
 **/tmp/spreadsheets/*.jpg
 **/tmp/spreadsheets/*.jpeg
+**/tmp/api-cache/*
