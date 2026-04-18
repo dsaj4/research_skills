@@ -1,0 +1,4 @@
+interface:
+  display_name: "Company WeChat RSS"
+  short_description: "Bootstrap and export WeChat account RSS data"
+  default_prompt: "Use $company-wechat-rss-fetch to bootstrap a local WeWe RSS project and export company WeChat public account articles."

@@ -1,45 +1,43 @@
 ---
 name: company-wechat-rss-fetch
-description: Use when the user wants to collect company WeChat public account data, subscribe to company公众号 sources through a local WeWe RSS instance, export公众号 article metadata into JSON or CSV, or maintain a company-to-feed mapping for repeated WeChat data collection.
+description: Use when collecting company WeChat public account data, crawling gongzhonghao articles through WeWe RSS, exporting WeChat article metadata/content to JSON or CSV, or maintaining a company-to-feed mapping for repeatable public-account data collection.
 ---
 
 # Company WeChat RSS Fetch
 
-Use this skill to run the local `company-wechat-rss` workflow that wraps `wewe-rss`.
+Use this self-contained skill to create and operate a workspace-local wrapper around `wewe-rss`.
 
-## What this skill covers
+## Core rule
 
-- Prepare the vendored `wewe-rss` runtime with SQLite
-- Start the local dashboard and API
-- Add public accounts through the `wewe-rss` dashboard
-- Discover feed ids from the current subscription catalog
-- Export company-grouped article data into JSON and CSV
+Do not assume the current repository already contains `company_wechat_rss.py` or runtime scripts. If the current workspace does not already have a prepared project, bootstrap one from this skill first.
 
-## When to use
+## Quick workflow
 
-Use this skill whenever the user asks to:
-
-- crawl company公众号 content
-- collect WeChat public account article metadata
-- build or refresh a company公众号 dataset
-- list current `wewe-rss` subscriptions
-- export company-to-feed article snapshots
-
-## Workflow
-
-1. Read [workflow.md](references/workflow.md) for the exact command sequence.
-2. Prepare the runtime:
+1. Read [workflow.md](references/workflow.md) when you need command details.
+2. Bootstrap the project into the current workspace:
+   `python <skill-dir>\scripts\bootstrap_company_wechat_rss.py --workspace .`
+3. Enter the generated project:
+   `cd company-wechat-rss`
+4. Prepare the local SQLite `wewe-rss` runtime:
    `powershell -ExecutionPolicy Bypass -File .\scripts\prepare_wewe_rss_runtime.ps1`
-3. Start the service:
+5. Start the dashboard/API:
    `powershell -ExecutionPolicy Bypass -File .\scripts\start_wewe_rss.ps1`
-4. Open `http://127.0.0.1:4000/dash`, then add a WeRead account and target public accounts.
-5. Save the current feed catalog:
+6. Open `http://127.0.0.1:4000/dash`, log in with WeRead QR code, and add target public accounts.
+7. List current feeds:
    `python .\company_wechat_rss.py list-feeds --output .\output\feed_catalog.json`
-6. Fill `config\company_accounts.template.json` or create a project-specific copy.
-7. Export grouped data:
+8. Fill `config\company_accounts.template.json` or create a project-specific config copy.
+9. Export company-grouped article data:
    `python .\company_wechat_rss.py export-company-data --config .\config\company_accounts.template.json`
-8. Report the generated JSON and CSV paths.
+10. Report the generated JSON, CSV, feed catalog, and manifest paths.
 
-## Important note
+## Bundled resources
 
-The first account login step is manual because upstream `wewe-rss` requires QR-code authentication against WeRead. After that, feed discovery and data export are scriptable.
+- `scripts/bootstrap_company_wechat_rss.py`: creates a project in the current workspace, copies wrapper scripts/config, and clones `https://github.com/cooderl/wewe-rss`.
+- `assets/company-wechat-rss-project/`: template project copied by the bootstrap script.
+- `references/workflow.md`: detailed command sequence and recovery notes.
+
+## Safety notes
+
+- The bootstrap script preserves existing files by default. Use `--force` only when the user wants to overwrite scaffold files.
+- The upstream WeRead login step is manual because `wewe-rss` requires QR-code authentication.
+- Exported data covers article metadata and feed JSON content available from `wewe-rss`; deeper engagement metrics such as reads/likes/comments are not guaranteed.

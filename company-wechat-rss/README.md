@@ -12,8 +12,9 @@ It keeps the upstream service source in `vendor/wewe-rss/`, starts it locally wi
 - `scripts/init_wewe_rss_sqlite.py`: initialize the local SQLite schema used by the vendored server
 - `scripts/start_wewe_rss.ps1`: start `wewe-rss` in the background
 - `scripts/stop_wewe_rss.ps1`: stop the local background service
-- `skills/company-wechat-rss-fetch/`: repo-local skill that documents the workflow
+- `skills/company-wechat-rss-fetch/`: self-contained skill that can bootstrap this workflow in any workspace
 - `tests/`: unit tests for the export layer
+- `output/skill-packages/company-wechat-rss-fetch.skill`: packaged reusable skill for installation into Codex
 
 ## Upstream Source
 
@@ -29,6 +30,16 @@ powershell -ExecutionPolicy Bypass -File .\scripts\prepare_wewe_rss_runtime.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\start_wewe_rss.ps1
 python .\company_wechat_rss.py list-feeds --output .\output\feed_catalog.json
 python .\company_wechat_rss.py export-company-data --config .\config\company_accounts.template.json
+```
+
+## Reusable Skill Package
+
+The skill under `skills/company-wechat-rss-fetch/` is self-contained. After installation, another Codex session can run its bundled bootstrap script to create a workspace-local `company-wechat-rss` project, clone `wewe-rss`, and copy the wrapper scripts/config without depending on this repository checkout.
+
+The current packaged skill is written to:
+
+```text
+output/skill-packages/company-wechat-rss-fetch.skill
 ```
 
 ## First-Time Onboarding
