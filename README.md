@@ -4,10 +4,7 @@ This repository is a container for multiple standalone skill projects.
 
 ## Top-level layout
 
-- `openrouter-rankings/`: OpenRouter rankings crawl, workbook generation, dashboard display refresh, and repo-local agent skills.
-- `llm-stats-rankings/`: LLM Stats homepage leaderboard extraction, CSV export, workbook generation, and repo-local agent skills.
-- `artificialanalysis-rankings/`: Artificial Analysis homepage main leaderboard extraction, sqlite snapshot storage, workbook generation, and repo-local refresh skills.
-- `site-rankings-factory/`: Reusable scaffold skill for bootstrapping new website rankings projects with crawler, storage layer, and workbook display layer.
+- `ranking-skill/`: All rankings-related skill projects, including OpenRouter, LLM Stats, Artificial Analysis, and the reusable site rankings factory.
 - `company-wechat-rss/`: WeWe RSS wrapper for collecting company WeChat public account data and exporting company-grouped JSON/CSV snapshots.
 - `draft-excel-format-adapter/`: Research draft Excel creation/modification skill, including the current ARR-style evidence workflow and chart-template adapter guidance.
 - `_shared/`: Reserved for utilities, references, or assets reused by multiple skill projects.
@@ -15,7 +12,9 @@ This repository is a container for multiple standalone skill projects.
 
 ## Convention for future projects
 
-Add each new skill project as its own top-level folder beside `openrouter-rankings/`.
+Add each new non-ranking skill project as its own top-level folder beside `ranking-skill/`.
+
+Add rankings-related projects under `ranking-skill/` so crawler, workbook, display refresh, and factory skills for ranking sites stay together.
 
 Each project should stay self-contained and preferably include:
 

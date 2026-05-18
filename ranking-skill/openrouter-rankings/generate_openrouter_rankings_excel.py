@@ -19,6 +19,8 @@ from openpyxl.utils import get_column_letter
 SOURCE_URL = "https://openrouter.ai/rankings"
 RANKING_PERIOD = "This Week"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+TOP_MODELS_ACTION_ID = "00cb194ad7c33c8f52f4d016107f812f3837aef7f1"
+NEXT_ROUTER_STATE_TREE = '%5B%22%22%2C%7B%22children%22%3A%5B%22(home)%22%2C%7B%22children%22%3A%5B%22rankings%22%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%2Cnull%2Cnull%2C0%5D%7D%2Cnull%2Cnull%2C0%5D%7D%2Cnull%2Cnull%2C0%5D%7D%2Cnull%2Cnull%2C20%5D'
 LEADERBOARD_SNAPSHOT_CAPTURED_AT = "2026-03-31"
 DISPLAY_SHEET_TITLE = "\u5c55\u793a\u9875"
 DATA_TREND_SHEET = "Data_Trend"
@@ -219,6 +221,24 @@ def fetch_rankings_html(url: str = SOURCE_URL) -> str:
         return response.read().decode("utf-8")
 
 
+def fetch_top_models_action_response() -> str:
+    request = Request(
+        SOURCE_URL,
+        data=b"[]",
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "text/x-component",
+            "Content-Type": "text/plain;charset=UTF-8",
+            "Referer": SOURCE_URL,
+            "Next-Action": TOP_MODELS_ACTION_ID,
+            "Next-Router-State-Tree": NEXT_ROUTER_STATE_TREE,
+        },
+        method="POST",
+    )
+    with urlopen(request, timeout=60) as response:
+        return response.read().decode("utf-8")
+
+
 def load_rankings_html(cache_path: Path) -> str:
     try:
         html = fetch_rankings_html()
@@ -288,8 +308,38 @@ def extract_top_models_chart_payload_from_html(html: str) -> dict[str, object]:
     return {
         "forecast_key": forecast_key,
         "forecast_from_timestamp": forecast_from_timestamp,
+        "extraction_method": "embedded_html",
         "rows": rows,
     }
+
+
+def extract_top_models_chart_payload_from_rsc(response_text: str) -> dict[str, object]:
+    for line in response_text.splitlines():
+        if not line.startswith("1:"):
+            continue
+
+        payload = json.loads(line.split(":", 1)[1])
+        if isinstance(payload, dict) and isinstance(payload.get("data"), list):
+            rows: list[dict[str, object]] = []
+            for item in payload["data"]:
+                row = {"week_start": item["x"]}
+                row.update(item.get("ys", {}))
+                rows.append(row)
+            return {
+                "forecast_key": "",
+                "forecast_from_timestamp": payload.get("cachedAt"),
+                "extraction_method": "server_action_rsc",
+                "rows": rows,
+            }
+
+    raise ValueError("Could not locate top chart payload in rankings action response")
+
+
+def extract_top_models_chart_payload(html: str) -> dict[str, object]:
+    try:
+        return extract_top_models_chart_payload_from_html(html)
+    except ValueError:
+        return extract_top_models_chart_payload_from_rsc(fetch_top_models_action_response())
 
 
 def normalize_leaderboard_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -303,6 +353,51 @@ def normalize_leaderboard_rows(rows: list[dict[str, object]]) -> list[dict[str, 
             }
         )
     return normalized
+
+
+def leaderboard_rows_from_latest_timeseries(timeseries_payload: dict[str, object]) -> list[dict[str, object]]:
+    rows = timeseries_payload.get("rows", [])
+    if not rows:
+        return []
+
+    latest_row = rows[-1]
+    ranked_values: list[tuple[str, float]] = []
+    for key, value in latest_row.items():
+        if key == "week_start" or key == "Others" or key == timeseries_payload.get("forecast_key"):
+            continue
+        try:
+            ranked_values.append((str(key), float(value or 0)))
+        except (TypeError, ValueError):
+            continue
+
+    ranked_values.sort(key=lambda item: item[1], reverse=True)
+    leaderboard_rows: list[dict[str, object]] = []
+    for rank, (model_slug, weekly_tokens) in enumerate(ranked_values[:MAX_LEADERBOARD_ROWS], start=1):
+        provider = model_slug.split("/", 1)[0] if "/" in model_slug else ""
+        leaderboard_rows.append(
+            {
+                "rank": rank,
+                "model": model_slug,
+                "provider": provider,
+                "model_url": f"{SOURCE_URL.rsplit('/', 1)[0]}/{model_slug}",
+                "provider_url": f"{SOURCE_URL.rsplit('/', 1)[0]}/{provider}" if provider else SOURCE_URL,
+                "weekly_tokens_display": format_token_amount(weekly_tokens),
+                "weekly_tokens_billions": weekly_tokens / 1_000_000_000,
+                "wow_change_percent": 0,
+                "wow_change_ratio": 0,
+                "wow_change_direction": "flat",
+            }
+        )
+
+    return leaderboard_rows
+
+
+def leaderboard_rows_for_payload(timeseries_payload: dict[str, object]) -> list[dict[str, object]]:
+    if timeseries_payload.get("extraction_method") == "server_action_rsc":
+        rows = leaderboard_rows_from_latest_timeseries(timeseries_payload)
+        if rows:
+            return rows
+    return normalize_leaderboard_rows(LEADERBOARD_SNAPSHOT)
 
 
 def enrich_leaderboard_rows(
@@ -374,7 +469,12 @@ def leaderboard_history_key(row: dict[str, object]) -> tuple[str, str, str, str]
 
 
 def merge_leaderboard_history(existing_rows: list[dict[str, object]], new_rows: list[dict[str, object]]) -> list[dict[str, object]]:
-    merged = {leaderboard_history_key(row): dict(row) for row in existing_rows}
+    refreshed_snapshots = {str(row.get("snapshot_captured_at", "")) for row in new_rows if row.get("snapshot_captured_at")}
+    merged = {
+        leaderboard_history_key(row): dict(row)
+        for row in existing_rows
+        if str(row.get("snapshot_captured_at", "")) not in refreshed_snapshots
+    }
     for row in new_rows:
         merged[leaderboard_history_key(row)] = dict(row)
     return sorted(
@@ -1174,8 +1274,8 @@ def run_data_refresh(
 ) -> None:
     generated_at = current_timestamp()
     html = load_rankings_html(cache_path)
-    timeseries_payload = extract_top_models_chart_payload_from_html(html)
-    leaderboard_rows = enrich_leaderboard_rows(normalize_leaderboard_rows(LEADERBOARD_SNAPSHOT), generated_at)
+    timeseries_payload = extract_top_models_chart_payload(html)
+    leaderboard_rows = enrich_leaderboard_rows(leaderboard_rows_for_payload(timeseries_payload), generated_at)
 
     if workbook_path.exists():
         wb = load_workbook(workbook_path)
@@ -1211,8 +1311,8 @@ def run_full(
 ) -> None:
     generated_at = current_timestamp()
     html = load_rankings_html(cache_path)
-    timeseries_payload = extract_top_models_chart_payload_from_html(html)
-    leaderboard_rows = enrich_leaderboard_rows(normalize_leaderboard_rows(LEADERBOARD_SNAPSHOT), generated_at)
+    timeseries_payload = extract_top_models_chart_payload(html)
+    leaderboard_rows = enrich_leaderboard_rows(leaderboard_rows_for_payload(timeseries_payload), generated_at)
 
     if workbook_path.exists():
         wb = load_workbook(workbook_path)
