@@ -9,6 +9,7 @@ This repository is a container for multiple standalone skill projects.
 - `artificialanalysis-rankings/`: Artificial Analysis homepage main leaderboard extraction, sqlite snapshot storage, workbook generation, and repo-local refresh skills.
 - `site-rankings-factory/`: Reusable scaffold skill for bootstrapping new website rankings projects with crawler, storage layer, and workbook display layer.
 - `company-wechat-rss/`: WeWe RSS wrapper for collecting company WeChat public account data and exporting company-grouped JSON/CSV snapshots.
+- `draft-excel-format-adapter/`: Research draft Excel creation/modification skill, including the current ARR-style evidence workflow and chart-template adapter guidance.
 - `_shared/`: Reserved for utilities, references, or assets reused by multiple skill projects.
 - `_templates/`: Reserved for starter scaffolds and conventions for future skill projects.
 
