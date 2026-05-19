@@ -1,81 +1,158 @@
 {
   "schema_version": 1,
   "default_raw_base_url": "https://raw.githubusercontent.com/dsaj4/research_skills/main/draft-excel-format-adapter/skills/industry-research-draft-workflow",
+  "asset_groups": {
+    "core": "Required skill instructions, references, and scripts.",
+    "templates": "Required workbook/PDF template assets that define global draft style and font conventions.",
+    "examples": "Required example assets used for format reference and comparison checks."
+  },
   "assets": [
     {
       "path": "SKILL.md",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "Skill entrypoint and workflow instructions."
     },
     {
       "path": "agents/openai.yaml",
+      "group": "core",
+      "type": "text",
       "required": false,
       "description": "Codex app display metadata."
     },
     {
       "path": "references/scenario-router.md",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "Scenario classification router."
     },
     {
       "path": "references/workbook-contract.md",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "Shared workbook and evidence sheet contract."
     },
     {
       "path": "references/existing-file-to-template.md",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "Existing file to reusable draft template workflow."
     },
     {
       "path": "references/research-draft-generation.md",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "New evidence-first research draft generation workflow."
     },
     {
       "path": "references/data-collection-guidance.md",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "Data collection source order and evidence recording guidance."
     },
     {
       "path": "references/complex-scenario-registry.md",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "Registry for complex scenario draft contracts."
     },
     {
       "path": "references/quality-gates.md",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "Verification checklist for draft workflows."
     },
     {
       "path": "references/current-project-pattern.md",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "Existing-draft minimal modification pattern."
     },
     {
       "path": "references/new-draft-excel-pattern.md",
+      "group": "core",
+      "type": "text",
       "required": false,
       "description": "Legacy/current ARR-style new draft reference pattern."
     },
     {
       "path": "references/arr-best-practice.md",
+      "group": "core",
+      "type": "text",
       "required": false,
       "description": "ARR data collection reference case."
     },
     {
       "path": "references/asset-manifest.json",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "Asset list used by the bootstrap script."
     },
     {
       "path": "scripts/inspect_draft_excel_style.py",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "Workbook style/chart inspection helper."
     },
     {
       "path": "scripts/ensure_draft_excel_skill_assets.py",
+      "group": "core",
+      "type": "text",
       "required": true,
       "description": "Checks and restores missing bundled skill assets from GitHub."
+    },
+    {
+      "path": "assets/templates/步骤3、图表模板案例.xlsx",
+      "group": "templates",
+      "type": "binary",
+      "required": true,
+      "description": "Global chart/workbook style template case."
+    },
+    {
+      "path": "assets/templates/1、广发研究研报模板升级说明.pdf",
+      "group": "templates",
+      "type": "binary",
+      "required": true,
+      "description": "Global research report template and font/style specification."
+    },
+    {
+      "path": "assets/examples/research-draft-generation/README.md",
+      "group": "examples",
+      "type": "text",
+      "required": true,
+      "description": "Explains how to use the ARR workbook as a generic draft-format example."
+    },
+    {
+      "path": "assets/examples/research-draft-generation/通用数据收集底稿示例_ARR.xlsx",
+      "group": "examples",
+      "type": "binary",
+      "required": true,
+      "description": "Generic data-collection draft workbook example for structure and formatting reference."
+    },
+    {
+      "path": "assets/examples/research-draft-generation/contact_sheet_validated_final.png",
+      "group": "examples",
+      "type": "binary",
+      "required": true,
+      "description": "Example visual validation contact sheet."
+    },
+    {
+      "path": "assets/examples/research-draft-generation/截图视觉校验记录.md",
+      "group": "examples",
+      "type": "text",
+      "required": true,
+      "description": "Example screenshot visual validation record."
     }
   ]
 }

@@ -34,6 +34,13 @@ python "<skill>/scripts/ensure_draft_excel_skill_assets.py" --dry-run
 python "<skill>/scripts/ensure_draft_excel_skill_assets.py"
 ```
 
+Template and example assets are part of the expected local install because they define global formatting, font conventions, and workbook comparison examples:
+
+```powershell
+python "<skill>/scripts/ensure_draft_excel_skill_assets.py" --group templates
+python "<skill>/scripts/ensure_draft_excel_skill_assets.py" --group examples
+```
+
 The default asset source is:
 
 ```text
@@ -65,6 +72,14 @@ All scenarios should converge on the same review logic:
 
 For workbook structure, sheet contracts, and evidence fields, load `references/workbook-contract.md`.
 
+For visual/format reference, use:
+
+- `assets/templates/步骤3、图表模板案例.xlsx`
+- `assets/templates/1、广发研究研报模板升级说明.pdf`
+- `assets/examples/research-draft-generation/通用数据收集底稿示例_ARR.xlsx`
+
+The ARR workbook is a generic data-collection draft example. Its ARR/revenue business content is not the point; use it to compare sheet structure, evidence layout, screenshot placement, comments, and Chinese formatting.
+
 ## Verification
 
 Run the strongest feasible checks:
@@ -82,4 +97,3 @@ Also check:
 - `证据底稿` pairs content and source evidence
 - existing-draft modifications preserve unrelated sheets, formulas, screenshots, and notes
 - no current/formal file was overwritten during validation unless requested
-

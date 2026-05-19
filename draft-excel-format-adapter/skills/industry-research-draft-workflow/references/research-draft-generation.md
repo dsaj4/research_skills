@@ -33,6 +33,29 @@ Use topic sheets only when they improve reviewability. Examples:
 - `产品数据`
 - `AI应用`
 
+## Format Example Workbook
+
+Use this required local example as the generic Excel format reference for data-collection drafts:
+
+- `assets/examples/research-draft-generation/通用数据收集底稿示例_ARR.xlsx`
+- `assets/examples/research-draft-generation/contact_sheet_validated_final.png`
+- `assets/examples/research-draft-generation/截图视觉校验记录.md`
+
+The ARR/revenue subject matter is not important. Use the workbook to compare:
+
+- sheet order and naming
+- `数据总表`, topic sheets, `证据底稿`, and `待核验` roles
+- Chinese headers and enum values
+- evidence sheet two-column layout
+- screenshot placement, row heights, column widths, and comments
+- contact sheet and visual validation record style
+
+If the example is missing, restore it with:
+
+```powershell
+python "<skill>/scripts/ensure_draft_excel_skill_assets.py" --group examples
+```
+
 ## Evidence Draft Pattern
 
 Use `workbook-contract.md` for the exact evidence contract. In short:
@@ -54,7 +77,7 @@ Use `待核验` for:
 
 ## ARR Case Pattern
 
-For ARR-like or revenue口径 data collection, load `arr-best-practice.md` as a concrete example:
+For ARR-like or revenue口径 data collection, load `arr-best-practice.md` for business口径 cautions:
 
 - distinguish ARR, run-rate revenue, annualized revenue estimate, annual revenue estimate, projected run-rate, and undisclosed values
 - keep official disclosures separate from media reports and third-party estimates
@@ -67,4 +90,3 @@ For ARR-like or revenue口径 data collection, load `arr-best-practice.md` as a 
 - Do not mix official data and estimates without marking source type and confidence.
 - Do not overwrite original materials.
 - Do not invent data collection adapters inside this skill; use dedicated skills/projects when the source needs a maintained crawler.
-

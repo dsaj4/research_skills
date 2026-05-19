@@ -14,6 +14,21 @@ Use the smallest structure that supports review:
 
 For existing workbooks, do not force this structure if the workbook already has a review layout. Preserve the existing workbook unless the user asks for a rebuild.
 
+## Global Template Assets
+
+Template files are required local assets because they define global formatting and font conventions:
+
+- `assets/templates/步骤3、图表模板案例.xlsx`
+- `assets/templates/1、广发研究研报模板升级说明.pdf`
+
+Use these assets when creating templates, adapting chart styles, or checking visual consistency. Do not load their full content into context unless needed; inspect the files with spreadsheet/PDF tools or scripts.
+
+If missing, restore them with:
+
+```powershell
+python "<skill>/scripts/ensure_draft_excel_skill_assets.py" --group templates
+```
+
 ## Evidence Sheet Contract
 
 Preferred `证据底稿` format:
@@ -101,4 +116,3 @@ Final deliverables should use Chinese:
 - enum values
 - notes and visible reviewer-facing comments
 - validation records
-
