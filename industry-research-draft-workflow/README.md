@@ -22,7 +22,7 @@ The installable skill entrypoint is:
 Create an installable `.skill` archive with:
 
 ```powershell
-python .\scripts\package_draft_excel_skill.py
+python .\scripts\package_industry_research_draft_workflow.py
 ```
 
 The package is written to:
@@ -41,5 +41,5 @@ python .\skills\industry-research-draft-workflow\scripts\ensure_draft_excel_skil
 Default asset source:
 
 ```text
-https://raw.githubusercontent.com/dsaj4/research_skills/main/draft-excel-format-adapter/skills/industry-research-draft-workflow
+https://raw.githubusercontent.com/dsaj4/research_skills/main/industry-research-draft-workflow/skills/industry-research-draft-workflow
 ```

@@ -44,7 +44,7 @@ python "<skill>/scripts/ensure_draft_excel_skill_assets.py" --group examples
 The default asset source is:
 
 ```text
-https://raw.githubusercontent.com/dsaj4/research_skills/main/draft-excel-format-adapter/skills/industry-research-draft-workflow
+https://raw.githubusercontent.com/dsaj4/research_skills/main/industry-research-draft-workflow/skills/industry-research-draft-workflow
 ```
 
 ## Scenario Router

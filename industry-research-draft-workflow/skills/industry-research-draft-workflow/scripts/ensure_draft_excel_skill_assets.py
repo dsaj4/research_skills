@@ -20,7 +20,7 @@ from pathlib import Path
 
 DEFAULT_RAW_BASE_URL = (
     "https://raw.githubusercontent.com/dsaj4/research_skills/main/"
-    "draft-excel-format-adapter/skills/industry-research-draft-workflow"
+    "industry-research-draft-workflow/skills/industry-research-draft-workflow"
 )
 
 

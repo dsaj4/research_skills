@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "default_raw_base_url": "https://raw.githubusercontent.com/dsaj4/research_skills/main/draft-excel-format-adapter/skills/industry-research-draft-workflow",
+  "default_raw_base_url": "https://raw.githubusercontent.com/dsaj4/research_skills/main/industry-research-draft-workflow/skills/industry-research-draft-workflow",
   "asset_groups": {
     "core": "Required skill instructions, references, and scripts.",
     "templates": "Required workbook/PDF template assets that define global draft style and font conventions.",

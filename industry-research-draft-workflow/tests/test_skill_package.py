@@ -8,7 +8,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = PROJECT_ROOT / "skills" / "industry-research-draft-workflow"
-PACKAGE_SCRIPT = PROJECT_ROOT / "scripts" / "package_draft_excel_skill.py"
+PACKAGE_SCRIPT = PROJECT_ROOT / "scripts" / "package_industry_research_draft_workflow.py"
 ENSURE_SCRIPT = SKILL_ROOT / "scripts" / "ensure_draft_excel_skill_assets.py"
 
 
