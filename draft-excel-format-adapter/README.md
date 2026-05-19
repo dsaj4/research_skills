@@ -1,6 +1,6 @@
-# draft-excel-format-adapter
+# industry-research-draft-workflow
 
-Repo-local development home for the `draft-excel-format-adapter` skill.
+Repo-local development home for the `industry-research-draft-workflow` skill.
 
 The skill supports research draft workbook work in two modes:
 
@@ -15,7 +15,7 @@ Current best practice for new draft creation is based on the workflow in:
 
 The installable skill entrypoint is:
 
-- `skills/draft-excel-format-adapter/SKILL.md`
+- `skills/industry-research-draft-workflow/SKILL.md`
 
 ## Packaging
 
@@ -28,18 +28,18 @@ python .\scripts\package_draft_excel_skill.py
 The package is written to:
 
 ```text
-output/skill-packages/draft-excel-format-adapter.skill
+output/skill-packages/industry-research-draft-workflow.skill
 ```
 
 The packaged skill includes `scripts/ensure_draft_excel_skill_assets.py`, which checks local bundled assets and restores missing files from the current GitHub repository by default:
 
 ```powershell
-python .\skills\draft-excel-format-adapter\scripts\ensure_draft_excel_skill_assets.py --dry-run
-python .\skills\draft-excel-format-adapter\scripts\ensure_draft_excel_skill_assets.py
+python .\skills\industry-research-draft-workflow\scripts\ensure_draft_excel_skill_assets.py --dry-run
+python .\skills\industry-research-draft-workflow\scripts\ensure_draft_excel_skill_assets.py
 ```
 
 Default asset source:
 
 ```text
-https://raw.githubusercontent.com/dsaj4/research_skills/main/draft-excel-format-adapter/skills/draft-excel-format-adapter
+https://raw.githubusercontent.com/dsaj4/research_skills/main/draft-excel-format-adapter/skills/industry-research-draft-workflow
 ```

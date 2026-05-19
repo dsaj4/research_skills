@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "default_raw_base_url": "https://raw.githubusercontent.com/dsaj4/research_skills/main/draft-excel-format-adapter/skills/industry-research-draft-workflow",
+  "assets": [
+    {
+      "path": "SKILL.md",
+      "required": true,
+      "description": "Skill entrypoint and workflow instructions."
+    },
+    {
+      "path": "agents/openai.yaml",
+      "required": false,
+      "description": "Codex app display metadata."
+    },
+    {
+      "path": "references/scenario-router.md",
+      "required": true,
+      "description": "Scenario classification router."
+    },
+    {
+      "path": "references/workbook-contract.md",
+      "required": true,
+      "description": "Shared workbook and evidence sheet contract."
+    },
+    {
+      "path": "references/existing-file-to-template.md",
+      "required": true,
+      "description": "Existing file to reusable draft template workflow."
+    },
+    {
+      "path": "references/research-draft-generation.md",
+      "required": true,
+      "description": "New evidence-first research draft generation workflow."
+    },
+    {
+      "path": "references/data-collection-guidance.md",
+      "required": true,
+      "description": "Data collection source order and evidence recording guidance."
+    },
+    {
+      "path": "references/complex-scenario-registry.md",
+      "required": true,
+      "description": "Registry for complex scenario draft contracts."
+    },
+    {
+      "path": "references/quality-gates.md",
+      "required": true,
+      "description": "Verification checklist for draft workflows."
+    },
+    {
+      "path": "references/current-project-pattern.md",
+      "required": true,
+      "description": "Existing-draft minimal modification pattern."
+    },
+    {
+      "path": "references/new-draft-excel-pattern.md",
+      "required": false,
+      "description": "Legacy/current ARR-style new draft reference pattern."
+    },
+    {
+      "path": "references/arr-best-practice.md",
+      "required": false,
+      "description": "ARR data collection reference case."
+    },
+    {
+      "path": "references/asset-manifest.json",
+      "required": true,
+      "description": "Asset list used by the bootstrap script."
+    },
+    {
+      "path": "scripts/inspect_draft_excel_style.py",
+      "required": true,
+      "description": "Workbook style/chart inspection helper."
+    },
+    {
+      "path": "scripts/ensure_draft_excel_skill_assets.py",
+      "required": true,
+      "description": "Checks and restores missing bundled skill assets from GitHub."
+    }
+  ]
+}

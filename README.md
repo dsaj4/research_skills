@@ -6,7 +6,7 @@ This repository is a container for multiple standalone skill projects.
 
 - `ranking-skill/`: All rankings-related skill projects, including OpenRouter, LLM Stats, Artificial Analysis, and the reusable site rankings factory.
 - `company-wechat-rss/`: WeWe RSS wrapper for collecting company WeChat public account data and exporting company-grouped JSON/CSV snapshots.
-- `draft-excel-format-adapter/`: Research draft Excel creation/modification skill, including the current ARR-style evidence workflow and chart-template adapter guidance.
+- `draft-excel-format-adapter/`: Development project for the `industry-research-draft-workflow` skill, covering industry research draft workflows, evidence workbooks, PPT/draft synchronization, and chart-template guidance.
 - `_shared/`: Reserved for utilities, references, or assets reused by multiple skill projects.
 - `_templates/`: Reserved for starter scaffolds and conventions for future skill projects.
 

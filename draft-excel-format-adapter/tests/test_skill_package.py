@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SKILL_ROOT = PROJECT_ROOT / "skills" / "draft-excel-format-adapter"
+SKILL_ROOT = PROJECT_ROOT / "skills" / "industry-research-draft-workflow"
 PACKAGE_SCRIPT = PROJECT_ROOT / "scripts" / "package_draft_excel_skill.py"
 ENSURE_SCRIPT = SKILL_ROOT / "scripts" / "ensure_draft_excel_skill_assets.py"
 
@@ -40,7 +40,7 @@ class DraftExcelSkillPackageTests(unittest.TestCase):
 
     def test_package_contains_skill_and_bootstrap_assets(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            output = Path(tmpdir) / "draft-excel-format-adapter.skill"
+            output = Path(tmpdir) / "industry-research-draft-workflow.skill"
             result = subprocess.run(
                 [
                     "python",
@@ -60,12 +60,17 @@ class DraftExcelSkillPackageTests(unittest.TestCase):
                 names = set(zf.namelist())
 
             expected = {
-                "draft-excel-format-adapter/SKILL.md",
-                "draft-excel-format-adapter/references/asset-manifest.json",
-                "draft-excel-format-adapter/references/new-draft-excel-pattern.md",
-                "draft-excel-format-adapter/references/arr-best-practice.md",
-                "draft-excel-format-adapter/scripts/ensure_draft_excel_skill_assets.py",
-                "draft-excel-format-adapter/scripts/inspect_draft_excel_style.py",
+                "industry-research-draft-workflow/SKILL.md",
+                "industry-research-draft-workflow/references/asset-manifest.json",
+                "industry-research-draft-workflow/references/scenario-router.md",
+                "industry-research-draft-workflow/references/workbook-contract.md",
+                "industry-research-draft-workflow/references/existing-file-to-template.md",
+                "industry-research-draft-workflow/references/research-draft-generation.md",
+                "industry-research-draft-workflow/references/data-collection-guidance.md",
+                "industry-research-draft-workflow/references/complex-scenario-registry.md",
+                "industry-research-draft-workflow/references/quality-gates.md",
+                "industry-research-draft-workflow/scripts/ensure_draft_excel_skill_assets.py",
+                "industry-research-draft-workflow/scripts/inspect_draft_excel_style.py",
             }
             self.assertTrue(expected.issubset(names), expected - names)
 

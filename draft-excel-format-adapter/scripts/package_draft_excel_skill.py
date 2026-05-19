@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Package draft-excel-format-adapter as a .skill zip archive."""
+"""Package industry-research-draft-workflow as a .skill zip archive."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SKILL_ROOT = PROJECT_ROOT / "skills" / "draft-excel-format-adapter"
-DEFAULT_OUTPUT = PROJECT_ROOT / "output" / "skill-packages" / "draft-excel-format-adapter.skill"
+DEFAULT_SKILL_ROOT = PROJECT_ROOT / "skills" / "industry-research-draft-workflow"
+DEFAULT_OUTPUT = PROJECT_ROOT / "output" / "skill-packages" / "industry-research-draft-workflow.skill"
 
 
 EXCLUDED_PARTS = {"__pycache__", ".pytest_cache"}
@@ -43,7 +43,7 @@ def package_skill(skill_root: Path, output_path: Path) -> Path:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Package draft-excel-format-adapter skill.")
+    parser = argparse.ArgumentParser(description="Package industry-research-draft-workflow skill.")
     parser.add_argument("--skill-root", type=Path, default=DEFAULT_SKILL_ROOT)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()

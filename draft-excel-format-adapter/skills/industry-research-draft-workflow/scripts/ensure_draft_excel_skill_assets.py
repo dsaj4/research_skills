@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Check and restore draft-excel-format-adapter skill assets.
+"""Check and restore industry-research-draft-workflow skill assets.
 
 The packaged skill should include all core files. This script is a safety net for
 partial installs, hand-copied folders, or future lightweight packages: it checks
@@ -19,7 +19,7 @@ from pathlib import Path
 
 DEFAULT_RAW_BASE_URL = (
     "https://raw.githubusercontent.com/dsaj4/research_skills/main/"
-    "draft-excel-format-adapter/skills/draft-excel-format-adapter"
+    "draft-excel-format-adapter/skills/industry-research-draft-workflow"
 )
 
 
@@ -39,7 +39,7 @@ def normalize_raw_base_url(raw_base_url: str) -> str:
 
 
 def download_text(url: str, timeout: int) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": "draft-excel-format-adapter/1.0"})
+    request = urllib.request.Request(url, headers={"User-Agent": "industry-research-draft-workflow/1.0"})
     with urllib.request.urlopen(request, timeout=timeout) as response:
         data = response.read()
     return data.decode("utf-8")
@@ -107,7 +107,7 @@ def main() -> int:
         "--skill-root",
         type=Path,
         default=skill_root_from_script(),
-        help="Installed draft-excel-format-adapter skill folder.",
+        help="Installed industry-research-draft-workflow skill folder.",
     )
     parser.add_argument(
         "--raw-base-url",
